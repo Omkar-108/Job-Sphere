@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Scheduler Dashboard - JobSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        .dashboard-card {
+            transition: transform 0.2s;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .pipeline-stage {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .interview-item {
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+        }
+        .action-item {
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 5px 0;
+            background: #fff3cd;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            stroke: #007bff;
+            stroke-dasharray: 126;
+        }
+        .modal-content {
+            border-radius: 15px;
+        }
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+        }
+        .candidate-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+        .candidate-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .stage-badge {
+            font-size: 0.8em;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #007bff;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 15px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background: #dee2e6;
+        }
+        .timeline-item:last-child::after {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                <i class="fas fa-briefcase me-2"></i>JobSphere
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('hr.dashboard_hr') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('hr.dashboard_scheduler') }}">Scheduler</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('hr.hr_add_job') }}">Jobs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('scheduler.get_hr_applications') }}">Applications</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ session.hr_name }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2><i class="fas fa-calendar-alt me-2"></i>HR Scheduler Dashboard</h2>
+                <p class="text-muted">Manage automated hiring workflows and schedules</p>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card stat-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Total Candidates</h6>
+                                <h3 id="totalCandidates">0</h3>
+                            </div>
+                            <i class="fas fa-users fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Today's Interviews</h6>
+                                <h3 id="todayInterviews">0</h3>
+                            </div>
+                            <i class="fas fa-video fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Pending Actions</h6>
+                                <h3 id="pendingActions">0</h3>
+                            </div>
+                            <i class="fas fa-tasks fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Offers Sent</h6>
+                                <h3 id="offersSent">0</h3>
+                            </div>
+                            <i class="fas fa-envelope fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Tabs -->
+        <div class="row">
+            <div class="col-12">
+                <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+                            <i class="fas fa-chart-pie me-2"></i>Overview
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="interviews-tab" data-bs-toggle="tab" data-bs-target="#interviews" type="button">
+                            <i class="fas fa-calendar me-2"></i>Interviews
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tests-tab" data-bs-toggle="tab" data-bs-target="#tests" type="button">
+                            <i class="fas fa-clipboard-list me-2"></i>Tests
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pipeline-tab" data-bs-toggle="tab" data-bs-target="#pipeline" type="button">
+                            <i class="fas fa-stream me-2"></i>Pipeline
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="offers-tab" data-bs-toggle="tab" data-bs-target="#offers" type="button">
+                            <i class="fas fa-handshake me-2"></i>Offers
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="tab-content" id="dashboardTabsContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row mt-4">
+                    <!-- Pipeline Overview -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-bar me-2"></i>Pipeline Overview</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="pipelineChart"></div>
+                                <div id="pipelineStages"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recentActivity"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-calendar-week me-2"></i>Upcoming Events</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="upcomingEvents"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interviews Tab -->
+            <div class="tab-pane fade" id="interviews" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-video me-2"></i>Interview Schedule</h5>
+                                <div>
+                                    <a href="/interview-management" class="btn btn-outline-primary me-2">
+                                        <i class="fas fa-external-link-alt me-1"></i>Full Management
+                                    </a>
+                                    <button class="btn btn-primary" onclick="openScheduleInterviewModal()">
+                                        <i class="fas fa-plus me-1"></i>Schedule Interview
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="interviewsList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tests Tab -->
+            <div class="tab-pane fade" id="tests" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-clipboard-list me-2"></i>Assessment Tests</h5>
+                                <button class="btn btn-primary" onclick="openCreateTestModal()">
+                                    <i class="fas fa-plus me-1"></i>Create Test
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="testsList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pipeline Tab -->
+            <div class="tab-pane fade" id="pipeline" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-stream me-2"></i>Candidate Pipeline</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="candidatePipeline"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offers Tab -->
+            <div class="tab-pane fade" id="offers" role="tabpanel">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-handshake me-2"></i>Job Offers</h5>
+                                <div>
+                                    <a href="/offer-management" class="btn btn-outline-primary me-2">
+                                        <i class="fas fa-external-link-alt me-1"></i>Full Management
+                                    </a>
+                                    <button class="btn btn-primary" onclick="openCreateOfferModal()">
+                                        <i class="fas fa-plus me-1"></i>Create Offer
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="offersList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Interview Modal -->
+    <div class="modal fade" id="scheduleInterviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleInterviewForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Application</label>
+                                <select class="form-select" id="applicationSelect" required>
+                                    <option value="">Select Application</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Interview Type</label>
+                                <select class="form-select" id="interviewType" required>
+                                    <option value="Phone">Phone</option>
+                                    <option value="Video">Video</option>
+                                    <option value="In-person">In-person</option>
+                                    <option value="Technical">Technical</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="interviewDateTime" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" id="interviewDuration" value="60" min="15" max="180" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Meeting Link (for virtual interviews)</label>
+                            <input type="url" class="form-control" id="meetingLink" placeholder="https://...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Location (for in-person interviews)</label>
+                            <input type="text" class="form-control" id="interviewLocation" placeholder="Office address">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="scheduleInterview()">Schedule Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Test Modal -->
+    <div class="modal fade" id="createTestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Assessment Test</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createTestForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Job</label>
+                                <select class="form-select" id="testJobSelect" name="job_id" required>
+                                    <option value="">Select Job</option>
+                                    {% for job in jobs %}
+                                        <option value="{{ job._id }}">{{ job.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Test Title</label>
+                                <input type="text" class="form-control" id="testTitle" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="testDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" id="testDuration" value="60" min="15" max="180" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Passing Score (%)</label>
+                                <input type="number" class="form-control" id="passingScore" value="70" min="1" max="100" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Number of Questions</label>
+                                <input type="number" class="form-control" id="numQuestions" value="10" min="5" max="50" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createTest()">Create Test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Offer Modal -->
+    <div class="modal fade" id="createOfferModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Job Offer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createOfferForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Application</label>
+                                <select class="form-select" id="offerApplicationSelect" required>
+                                    <option value="">Select Application</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Employment Type</label>
+                                <select class="form-select" id="offerType" required>
+                                    <option value="Full-time">Full-time</option>
+                                    <option value="Part-time">Part-time</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Internship">Internship</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Salary (annual)</label>
+                                <input type="number" class="form-control" id="offerSalary" min="0" step="1000" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Benefits (one per line)</label>
+                            <textarea class="form-control" id="offerBenefits" rows="4" placeholder="Health insurance&#10;401(k) plan&#10;Paid time off"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Terms</label>
+                            <textarea class="form-control" id="offerTerms" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createOffer()">Create Offer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let dashboardData = {};
+        let currentTab = 'overview';
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupEventListeners();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(loadDashboardData, 300000);
+        });
+
+        function setupEventListeners() {
+            // Tab change listeners
+            document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function(e) {
+                    currentTab = e.target.getAttribute('data-bs-target').replace('#', '');
+                    loadTabData(currentTab);
+                });
+            });
+        }
+
+        async function loadDashboardData() {
+            try {
+                const hrId = '{{ session.hr_id }}';
+                const response = await fetch(`/api/scheduler/dashboard/hr/${hrId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    dashboardData = data.dashboard;
+                    updateStatistics();
+                    loadTabData(currentTab);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showAlert('Error loading dashboard data', 'danger');
+            }
+        }
+
+        function updateStatistics() {
+            document.getElementById('totalCandidates').textContent = dashboardData.summary.total_candidates || 0;
+            document.getElementById('todayInterviews').textContent = dashboardData.summary.total_interviews_today || 0;
+            document.getElementById('pendingActions').textContent = dashboardData.summary.pending_actions_count || 0;
+            document.getElementById('offersSent').textContent = dashboardData.offer_statistics.total_offers || 0;
+        }
+
+        function loadTabData(tab) {
+            switch(tab) {
+                case 'overview':
+                    loadOverviewData();
+                    break;
+                case 'interviews':
+                    loadInterviewsData();
+                    break;
+                case 'tests':
+                    loadTestsData();
+                    break;
+                case 'pipeline':
+                    loadPipelineData();
+                    break;
+                case 'offers':
+                    loadOffersData();
+                    break;
+            }
+        }
+
+        function loadOverviewData() {
+            // Pipeline overview
+            const pipelineStages = dashboardData.pipeline_overview.by_stage || {};
+            const stagesHtml = Object.entries(pipelineStages).map(([stage, count]) => `
+                <div class="pipeline-stage">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${stage}</span>
+                        <span class="badge bg-primary">${count}</span>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" style="width: ${(count / dashboardData.pipeline_overview.total_candidates * 100) || 0}%"></div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('pipelineStages').innerHTML = stagesHtml;
+
+            // Recent activity
+            const recentActivity = dashboardData.pending_actions.slice(0, 5) || [];
+            const activityHtml = recentActivity.map(action => `
+                <div class="timeline-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>${action.title}</strong>
+                        <small class="text-muted">${formatDate(action.scheduled_datetime)}</small>
+                    </div>
+                    <p class="mb-0">${action.description}</p>
+                </div>
+            `).join('');
+            document.getElementById('recentActivity').innerHTML = activityHtml || '<p class="text-muted">No recent activity</p>';
+
+            // Upcoming events
+            const upcomingEvents = dashboardData.upcoming_interviews || [];
+            const eventsHtml = upcomingEvents.map(event => `
+                <div class="interview-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${event.application.applicant_name}</strong>
+                            <br>
+                            <small>${event.job.title} - ${event.interview_type}</small>
+                        </div>
+                        <div class="text-end">
+                            <strong>${formatDate(event.scheduled_datetime)}</strong>
+                            <br>
+                            <small class="text-muted">${event.duration_minutes} minutes</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('upcomingEvents').innerHTML = eventsHtml || '<p class="text-muted">No upcoming events</p>';
+        }
+
+        async function loadInterviewsData() {
+            try {
+                const hrId = '{{ session.hr_id }}';
+                const response = await fetch(`/api/scheduler/interviews/hr/${hrId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const interviewsHtml = data.interviews.map(interview => `
+                        <div class="candidate-card">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <strong>${interview.application.applicant_name}</strong>
+                                    <br>
+                                    <small class="text-muted">${interview.application.email}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-info">${interview.interview_type}</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    ${formatDate(interview.scheduled_datetime)}
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-${getStatusColor(interview.status)}">${interview.status}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="viewInterview('${interview._id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="addFeedback('${interview._id}')">
+                                            <i class="fas fa-comment"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    document.getElementById('interviewsList').innerHTML = interviewsHtml || '<p class="text-muted">No interviews scheduled</p>';
+                }
+            } catch (error) {
+                console.error('Error loading interviews:', error);
+            }
+        }
+
+        async function loadTestsData() {
+            // Load tests data
+            document.getElementById('testsList').innerHTML = '<p class="text-muted">Tests functionality coming soon...</p>';
+        }
+
+        async function loadPipelineData() {
+            // Load pipeline data
+            document.getElementById('candidatePipeline').innerHTML = '<p class="text-muted">Pipeline visualization coming soon...</p>';
+        }
+
+        async function loadOffersData() {
+            try {
+                const response = await fetch('/api/scheduler/offers/statistics');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.statistics;
+                    const offersHtml = `
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h4>${stats.total_offers}</h4>
+                                        <p class="mb-0">Total Offers</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h4 class="text-success">${stats.accepted}</h4>
+                                        <p class="mb-0">Accepted</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h4 class="text-danger">${stats.rejected}</h4>
+                                        <p class="mb-0">Rejected</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h4 class="text-warning">${stats.pending}</h4>
+                                        <p class="mb-0">Pending</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <h5>Acceptance Rate: ${stats.acceptance_rate.toFixed(1)}%</h5>
+                        </div>
+                    `;
+                    document.getElementById('offersList').innerHTML = offersHtml;
+                }
+            } catch (error) {
+                console.error('Error loading offers:', error);
+            }
+        }
+
+        // Modal functions
+        function openScheduleInterviewModal() {
+            const modal = new bootstrap.Modal(document.getElementById('scheduleInterviewModal'));
+            modal.show();
+            loadApplications();
+        }
+
+        function openCreateTestModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createTestModal'));
+            modal.show();
+            loadJobs();
+        }
+
+        function openCreateOfferModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createOfferModal'));
+            modal.show();
+            loadApplicationsForOffer();
+        }
+
+        async function loadApplications() {
+            try {
+                const response = await fetch('/api/hr/applications');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const options = data.applications.map(app => `
+                        <option value="${app._id}">${app.applicant_name} - ${app.job_title}</option>
+                    `).join('');
+                    document.getElementById('applicationSelect').innerHTML = '<option value="">Select Application</option>' + options;
+                }
+            } catch (error) {
+                console.error('Error loading applications:', error);
+            }
+        }
+
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/hr/jobs');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const options = data.jobs.map(job => `
+                        <option value="${job._id}">${job.title} - ${job.department}</option>
+                    `).join('');
+                    document.getElementById('testJobSelect').innerHTML = '<option value="">Select Job</option>' + options;
+                }
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+
+        async function loadApplicationsForOffer() {
+            // Load applications that are ready for offer stage
+            try {
+                const response = await fetch('/api/hr/applications');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const readyApplications = data.applications.filter(app => 
+                        app.status === 'Interview Passed' || app.status === 'Ready for Offer'
+                    );
+                    const options = readyApplications.map(app => `
+                        <option value="${app._id}">${app.applicant_name} - ${app.job_title}</option>
+                    `).join('');
+                    document.getElementById('offerApplicationSelect').innerHTML = '<option value="">Select Application</option>' + options;
+                }
+            } catch (error) {
+                console.error('Error loading applications for offer:', error);
+            }
+        }
+
+        async function scheduleInterview() {
+            try {
+                const formData = {
+                    application_id: document.getElementById('applicationSelect').value,
+                    job_id: '', // Will be fetched from application
+                    candidate_id: '', // Will be fetched from application
+                    interview_type: document.getElementById('interviewType').value,
+                    scheduled_datetime: document.getElementById('interviewDateTime').value,
+                    duration_minutes: parseInt(document.getElementById('interviewDuration').value),
+                    meeting_link: document.getElementById('meetingLink').value,
+                    location: document.getElementById('interviewLocation').value
+                };
+
+                const response = await fetch('/api/scheduler/interviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Interview scheduled successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('scheduleInterviewModal')).hide();
+                    loadInterviewsData();
+                } else {
+                    showAlert(data.error || 'Error scheduling interview', 'danger');
+                }
+            } catch (error) {
+                console.error('Error scheduling interview:', error);
+                showAlert('Error scheduling interview', 'danger');
+            }
+        }
+
+        async function createTest() {
+            try {
+                const formData = {
+                    job_id: document.getElementById('testJobSelect').value,
+                    title: document.getElementById('testTitle').value,
+                    description: document.getElementById('testDescription').value,
+                    duration_minutes: parseInt(document.getElementById('testDuration').value),
+                    passing_score: parseInt(document.getElementById('passingScore').value),
+                    num_questions: parseInt(document.getElementById('numQuestions').value)
+                };
+
+                // First create test
+                const testResponse = await fetch('/api/scheduler/tests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const testData = await testResponse.json();
+                
+                if (testData.success) {
+                    // Then generate questions
+                    const genResponse = await fetch(`/api/scheduler/tests/${testData.test_id}/generate-questions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ num_questions: formData.num_questions })
+                    });
+
+                    const genData = await genResponse.json();
+                    
+                    if (genData.success) {
+                        showAlert('Test created and questions generated successfully', 'success');
+                        bootstrap.Modal.getInstance(document.getElementById('createTestModal')).hide();
+                        loadTestsData();
+                    } else {
+                        showAlert('Test created but failed to generate questions', 'warning');
+                    }
+                } else {
+                    showAlert(testData.error || 'Error creating test', 'danger');
+                }
+            } catch (error) {
+                console.error('Error creating test:', error);
+                showAlert('Error creating test', 'danger');
+            }
+        }
+
+        async function createOffer() {
+            try {
+                const benefits = document.getElementById('offerBenefits').value.split('\n').filter(b => b.trim());
+                
+                const formData = {
+                    application_id: document.getElementById('offerApplicationSelect').value,
+                    salary: parseFloat(document.getElementById('offerSalary').value),
+                    start_date: document.getElementById('startDate').value,
+                    offer_type: document.getElementById('offerType').value,
+                    benefits: benefits,
+                    terms: document.getElementById('offerTerms').value
+                };
+
+                const response = await fetch('/api/scheduler/offers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Offer created successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('createOfferModal')).hide();
+                    loadOffersData();
+                } else {
+                    showAlert(data.error || 'Error creating offer', 'danger');
+                }
+            } catch (error) {
+                console.error('Error creating offer:', error);
+                showAlert('Error creating offer', 'danger');
+            }
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Scheduled': 'primary',
+                'In Progress': 'warning',
+                'Completed': 'success',
+                'Cancelled': 'danger',
+                'No Show': 'secondary'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.container-fluid').firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        function viewInterview(interviewId) {
+            // View interview details
+            console.log('View interview:', interviewId);
+        }
+
+        function addFeedback(interviewId) {
+            // Add interview feedback
+            console.log('Add feedback:', interviewId);
+        }
+    </script>
+</body>
+</html>

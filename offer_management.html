@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offer Management - Job Sphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: calc(100vh - 56px);
+        }
+        .offer-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .offer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+        }
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .candidate-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .offer-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 9px;
+            top: 24px;
+            height: calc(100% + 20px);
+            width: 2px;
+            background: #e9ecef;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+        .offer-preview {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .offer-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+        .offer-body {
+            padding: 20px;
+        }
+        .offer-footer {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 0 0 8px 8px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('hr.dashboard_hr') }}">
+                <i class="fas fa-briefcase me-2"></i>Job Sphere
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('hr.dashboard_hr') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('hr.dashboard_scheduler') }}">
+                            <i class="fas fa-calendar-alt me-1"></i>Scheduler
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown profile-dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="profile-circle me-2 bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
+                                {{ session.user[0].upper() }}
+                            </div>
+                            {{ session.user }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('overview')">
+                            <i class="fas fa-chart-line me-2"></i>Overview
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showSection('offers')">
+                            <i class="fas fa-file-contract me-2"></i>Offers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('templates')">
+                            <i class="fas fa-file-alt me-2"></i>Templates
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('analytics')">
+                            <i class="fas fa-chart-pie me-2"></i>Analytics
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="mb-1">Offer Management</h2>
+                        <p class="text-muted mb-0">Create and manage job offers for candidates</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-primary me-2" onclick="refreshOffers()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOfferModal">
+                            <i class="fas fa-plus me-1"></i>Create Offer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Overview Section -->
+                <div id="overview" class="content-section">
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6 mb-3">
+                            <div class="stats-card border-left-primary">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="text-muted mb-2">Total Offers</h6>
+                                        <h3 class="mb-0" id="totalOffers">0</h3>
+                                    </div>
+                                    <div class="text-primary">
+                                        <i class="fas fa-file-contract fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-3">
+                            <div class="stats-card border-left-success">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="text-muted mb-2">Accepted</h6>
+                                        <h3 class="mb-0" id="acceptedOffers">0</h3>
+                                    </div>
+                                    <div class="text-success">
+                                        <i class="fas fa-check-circle fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-3">
+                            <div class="stats-card border-left-warning">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="text-muted mb-2">Pending</h6>
+                                        <h3 class="mb-0" id="pendingOffers">0</h3>
+                                    </div>
+                                    <div class="text-warning">
+                                        <i class="fas fa-hourglass-half fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-3">
+                            <div class="stats-card border-left-danger">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="text-muted mb-2">Rejected</h6>
+                                        <h3 class="mb-0" id="rejectedOffers">0</h3>
+                                    </div>
+                                    <div class="text-danger">
+                                        <i class="fas fa-times-circle fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Offers Section -->
+                <div id="offers" class="content-section">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Job Offers</h5>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="statusFilter" onchange="filterOffers()">
+                                        <option value="">All Status</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="sent">Sent</option>
+                                        <option value="accepted">Accepted</option>
+                                        <option value="rejected">Rejected</option>
+                                        <option value="expired">Expired</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="offersList">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading offers...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Section -->
+                <div id="templates" class="content-section" style="display: none;">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Offer Templates</h5>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
+                                    <i class="fas fa-plus me-1"></i>Create Template
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="templatesList">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading templates...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analytics" class="content-section" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <h5 class="mb-0">Offer Status Distribution</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <h5 class="mb-0">Acceptance Rate Trend</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="trendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0">Recent Activity</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="activityTimeline">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading activity...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Offer Modal -->
+    <div class="modal fade" id="createOfferModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Job Offer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createOfferForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Candidate</label>
+                                <select class="form-select" id="candidateSelect" required>
+                                    <option value="">Select Candidate</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Job Position</label>
+                                <select class="form-select" id="jobSelect" required>
+                                    <option value="">Select Job</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Offer Type</label>
+                                <select class="form-select" id="offerType" required>
+                                    <option value="">Select Type</option>
+                                    <option value="full_time">Full Time</option>
+                                    <option value="part_time">Part Time</option>
+                                    <option value="contract">Contract</option>
+                                    <option value="internship">Internship</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Annual Salary</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="salary" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" class="form-control" id="department" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Reporting To</label>
+                                <input type="text" class="form-control" id="reportingTo">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Benefits</label>
+                                <input type="text" class="form-control" id="benefits" placeholder="Health, Dental, Vision, 401k, etc.">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Terms</label>
+                            <textarea class="form-control" id="additionalTerms" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Special Notes</label>
+                            <textarea class="form-control" id="specialNotes" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Valid Until</label>
+                                <input type="date" class="form-control" id="validUntil">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Template</label>
+                                <select class="form-select" id="templateSelect">
+                                    <option value="">Default Template</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="previewOffer()">Preview</button>
+                    <button type="button" class="btn btn-primary" onclick="createOffer()">Create Offer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Preview Modal -->
+    <div class="modal fade" id="offerPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Offer Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="offer-preview">
+                        <div class="offer-header">
+                            <h3>Job Offer Letter</h3>
+                            <p class="mb-0">{{ company_name | default('Job Sphere') }}</p>
+                        </div>
+                        <div class="offer-body" id="offerPreviewContent">
+                            <!-- Preview content will be generated here -->
+                        </div>
+                        <div class="offer-footer">
+                            <p class="mb-0">This offer is valid until <span id="previewValidUntil">N/A</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmCreateOffer()">Confirm & Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Details Modal -->
+    <div class="modal fade" id="offerDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Offer Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="offerDetailsContent">
+                    <!-- Details will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="resendOfferBtn">Resend Offer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Template Modal -->
+    <div class="modal fade" id="createTemplateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Offer Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createTemplateForm">
+                        <div class="mb-3">
+                            <label class="form-label">Template Name</label>
+                            <input type="text" class="form-control" id="templateName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Template Type</label>
+                            <select class="form-select" id="templateType" required>
+                                <option value="">Select Type</option>
+                                <option value="full_time">Full Time</option>
+                                <option value="part_time">Part Time</option>
+                                <option value="contract">Contract</option>
+                                <option value="internship">Internship</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="templateSubject" placeholder="Job Offer - {{job_title}}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email Body</label>
+                            <textarea class="form-control" id="templateBody" rows="10" placeholder="Dear {{candidate_name}},&#10;&#10;We are pleased to offer you the position of {{job_title}}..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createTemplate()">Create Template</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let offers = [];
+        let templates = [];
+        let currentOfferId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOffers();
+            loadCandidates();
+            loadJobs();
+            loadTemplates();
+            updateStatistics();
+        });
+
+        // Show section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).style.display = 'block';
+            
+            // Update nav
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load section-specific data
+            if (sectionId === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
+        // Load offers
+        async function loadOffers() {
+            try {
+                const response = await fetch('/api/scheduler/offers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    offers = data.offers;
+                    renderOffers();
+                } else {
+                    console.error('Failed to load offers:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading offers:', error);
+                document.getElementById('offersList').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Failed to load offers. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        // Render offers
+        function renderOffers() {
+            const container = document.getElementById('offersList');
+            
+            if (offers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-contract fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No offers created</h5>
+                        <p class="text-muted">Click "Create Offer" to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const offersHtml = offers.map(offer => {
+                const statusClass = getStatusClass(offer.status);
+                const candidateInitial = offer.candidate_name ? offer.candidate_name.charAt(0).toUpperCase() : 'C';
+                
+                return `
+                    <div class="offer-card card mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <div class="candidate-info">
+                                        <div class="candidate-avatar">${candidateInitial}</div>
+                                        <div>
+                                            <h6 class="mb-1">${offer.candidate_name || 'Unknown Candidate'}</h6>
+                                            <small class="text-muted">${offer.job_title || 'Unknown Position'}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="offer-amount">$${offer.salary || '0'}</div>
+                                    <small class="text-muted">${offer.offer_type || 'N/A'}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <div>
+                                        <i class="fas fa-calendar me-1 text-muted"></i>
+                                        <small>${formatDate(offer.created_at)}</small>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-clock me-1 text-muted"></i>
+                                        <small>Valid: ${formatDate(offer.valid_until)}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="status-badge badge ${statusClass}">
+                                        ${offer.status || 'Unknown'}
+                                    </span>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewOffer('${offer._id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success" onclick="downloadOffer('${offer._id}')" ${offer.status !== 'sent' ? 'disabled' : ''}>
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="resendOffer('${offer._id}')" ${offer.status !== 'sent' ? 'disabled' : ''}>
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="withdrawOffer('${offer._id}')" ${['accepted', 'rejected', 'expired'].includes(offer.status) ? 'disabled' : ''}>
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = offersHtml;
+        }
+
+        // Load candidates
+        async function loadCandidates() {
+            try {
+                const response = await fetch('/api/scheduler/candidates');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('candidateSelect');
+                    select.innerHTML = '<option value="">Select Candidate</option>';
+                    
+                    data.candidates.forEach(candidate => {
+                        const option = document.createElement('option');
+                        option.value = candidate._id;
+                        option.textContent = `${candidate.name} - ${candidate.email}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading candidates:', error);
+            }
+        }
+
+        // Load jobs
+        async function loadJobs() {
+            try {
+                const response = await fetch('/api/jobs');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('jobSelect');
+                    select.innerHTML = '<option value="">Select Job</option>';
+                    
+                    data.jobs.forEach(job => {
+                        const option = document.createElement('option');
+                        option.value = job._id;
+                        option.textContent = job.title;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+
+        // Load templates
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/scheduler/offers/templates');
+                const data = await response.json();
+                
+                if (data.success) {
+                    templates = data.templates;
+                    renderTemplates();
+                    
+                    // Populate template select in create offer modal
+                    const select = document.getElementById('templateSelect');
+                    select.innerHTML = '<option value="">Default Template</option>';
+                    
+                    templates.forEach(template => {
+                        const option = document.createElement('option');
+                        option.value = template._id;
+                        option.textContent = template.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        // Render templates
+        function renderTemplates() {
+            const container = document.getElementById('templatesList');
+            
+            if (templates.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No templates created</h5>
+                        <p class="text-muted">Create templates to standardize your offer letters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const templatesHtml = templates.map(template => {
+                return `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${template.name}</h6>
+                                    <p class="text-muted mb-2">${template.template_type} - ${template.subject}</p>
+                                    <small class="text-muted">Created: ${formatDate(template.created_at)}</small>
+                                </div>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editTemplate('${template._id}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteTemplate('${template._id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = templatesHtml;
+        }
+
+        // Preview offer
+        function previewOffer() {
+            const form = document.getElementById('createOfferForm');
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const candidateSelect = document.getElementById('candidateSelect');
+            const candidateOption = candidateSelect.options[candidateSelect.selectedIndex];
+            const candidateName = candidateOption.textContent.split(' - ')[0];
+            
+            const jobSelect = document.getElementById('jobSelect');
+            const jobOption = jobSelect.options[jobSelect.selectedIndex];
+            const jobTitle = jobOption.textContent;
+
+            const previewContent = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Candidate:</strong> ${candidateName}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Position:</strong> ${jobTitle}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Offer Type:</strong> ${document.getElementById('offerType').value}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Annual Salary:</strong> $${document.getElementById('salary').value}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Start Date:</strong> ${formatDate(document.getElementById('startDate').value)}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Department:</strong> ${document.getElementById('department').value}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Location:</strong> ${document.getElementById('location').value}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Reporting To:</strong> ${document.getElementById('reportingTo').value || 'N/A'}
+                    </div>
+                </div>
+                ${document.getElementById('benefits').value ? `
+                <div class="mb-3">
+                    <strong>Benefits:</strong> ${document.getElementById('benefits').value}
+                </div>
+                ` : ''}
+                ${document.getElementById('additionalTerms').value ? `
+                <div class="mb-3">
+                    <strong>Additional Terms:</strong><br>
+                    ${document.getElementById('additionalTerms').value.replace(/\n/g, '<br>')}
+                </div>
+                ` : ''}
+                ${document.getElementById('specialNotes').value ? `
+                <div class="mb-3">
+                    <strong>Special Notes:</strong><br>
+                    ${document.getElementById('specialNotes').value.replace(/\n/g, '<br>')}
+                </div>
+                ` : ''}
+            `;
+
+            document.getElementById('offerPreviewContent').innerHTML = previewContent;
+            document.getElementById('previewValidUntil').textContent = formatDate(document.getElementById('validUntil').value);
+            
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('offerPreviewModal')).show();
+        }
+
+        // Create offer
+        async function createOffer() {
+            const form = document.getElementById('createOfferForm');
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const offerData = {
+                candidate_id: document.getElementById('candidateSelect').value,
+                job_id: document.getElementById('jobSelect').value,
+                offer_type: document.getElementById('offerType').value,
+                salary: parseFloat(document.getElementById('salary').value),
+                start_date: document.getElementById('startDate').value,
+                department: document.getElementById('department').value,
+                location: document.getElementById('location').value,
+                reporting_to: document.getElementById('reportingTo').value,
+                benefits: document.getElementById('benefits').value,
+                additional_terms: document.getElementById('additionalTerms').value,
+                special_notes: document.getElementById('specialNotes').value,
+                valid_until: document.getElementById('validUntil').value,
+                template_id: document.getElementById('templateSelect').value
+            };
+
+            try {
+                const response = await fetch('/api/scheduler/offers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(offerData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Offer created successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('createOfferModal')).hide();
+                    form.reset();
+                    loadOffers();
+                    updateStatistics();
+                } else {
+                    alert('Failed to create offer: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error creating offer:', error);
+                alert('An error occurred while creating the offer');
+            }
+        }
+
+        // Confirm create offer (from preview)
+        async function confirmCreateOffer() {
+            bootstrap.Modal.getInstance(document.getElementById('offerPreviewModal')).hide();
+            await createOffer();
+        }
+
+        // View offer details
+        async function viewOffer(offerId) {
+            try {
+                const response = await fetch(`/api/scheduler/offers/${offerId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const offer = data.offer;
+                    const content = document.getElementById('offerDetailsContent');
+                    
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Candidate Information</h6>
+                                <p><strong>Name:</strong> ${offer.candidate_name || 'N/A'}</p>
+                                <p><strong>Email:</strong> ${offer.candidate_email || 'N/A'}</p>
+                                <p><strong>Phone:</strong> ${offer.candidate_phone || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Offer Details</h6>
+                                <p><strong>Position:</strong> ${offer.job_title || 'N/A'}</p>
+                                <p><strong>Type:</strong> ${offer.offer_type || 'N/A'}</p>
+                                <p><strong>Salary:</strong> $${offer.salary || 'N/A'}</p>
+                                <p><strong>Status:</strong> <span class="badge ${getStatusClass(offer.status)}">${offer.status || 'N/A'}</span></p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Employment Details</h6>
+                                <p><strong>Department:</strong> ${offer.department || 'N/A'}</p>
+                                <p><strong>Location:</strong> ${offer.location || 'N/A'}</p>
+                                <p><strong>Start Date:</strong> ${formatDate(offer.start_date)}</p>
+                                <p><strong>Reporting To:</strong> ${offer.reporting_to || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Timeline</h6>
+                                <p><strong>Created:</strong> ${formatDate(offer.created_at)}</p>
+                                <p><strong>Sent:</strong> ${offer.sent_at ? formatDate(offer.sent_at) : 'Not sent'}</p>
+                                <p><strong>Valid Until:</strong> ${formatDate(offer.valid_until)}</p>
+                                <p><strong>Responded:</strong> ${offer.responded_at ? formatDate(offer.responded_at) : 'No response'}</p>
+                            </div>
+                        </div>
+                        ${offer.benefits ? `<hr><h6>Benefits</h6><p>${offer.benefits}</p>` : ''}
+                        ${offer.additional_terms ? `<hr><h6>Additional Terms</h6><p>${offer.additional_terms.replace(/\n/g, '<br>')}</p>` : ''}
+                        ${offer.special_notes ? `<hr><h6>Special Notes</h6><p>${offer.special_notes.replace(/\n/g, '<br>')}</p>` : ''}
+                    `;
+                    
+                    currentOfferId = offerId;
+                    
+                    // Update resend button
+                    const resendBtn = document.getElementById('resendOfferBtn');
+                    resendBtn.disabled = offer.status !== 'sent';
+                    
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('offerDetailsModal')).show();
+                } else {
+                    alert('Failed to load offer details');
+                }
+            } catch (error) {
+                console.error('Error loading offer details:', error);
+                alert('An error occurred while loading offer details');
+            }
+        }
+
+        // Download offer
+        async function downloadOffer(offerId) {
+            try {
+                const response = await fetch(`/api/scheduler/offers/${offerId}/download`);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `offer_${offerId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error downloading offer:', error);
+                alert('An error occurred while downloading the offer');
+            }
+        }
+
+        // Resend offer
+        async function resendOffer(offerId) {
+            if (!confirm('Are you sure you want to resend this offer?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/scheduler/offers/${offerId}/resend`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Offer resent successfully!');
+                } else {
+                    alert('Failed to resend offer: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error resending offer:', error);
+                alert('An error occurred while resending the offer');
+            }
+        }
+
+        // Withdraw offer
+        async function withdrawOffer(offerId) {
+            if (!confirm('Are you sure you want to withdraw this offer? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/scheduler/offers/${offerId}/withdraw`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Offer withdrawn successfully!');
+                    loadOffers();
+                    updateStatistics();
+                } else {
+                    alert('Failed to withdraw offer: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error withdrawing offer:', error);
+                alert('An error occurred while withdrawing the offer');
+            }
+        }
+
+        // Create template
+        async function createTemplate() {
+            const form = document.getElementById('createTemplateForm');
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const templateData = {
+                name: document.getElementById('templateName').value,
+                template_type: document.getElementById('templateType').value,
+                subject: document.getElementById('templateSubject').value,
+                body: document.getElementById('templateBody').value
+            };
+
+            try {
+                const response = await fetch('/api/scheduler/offers/templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Template created successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('createTemplateModal')).hide();
+                    form.reset();
+                    loadTemplates();
+                } else {
+                    alert('Failed to create template: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error creating template:', error);
+                alert('An error occurred while creating the template');
+            }
+        }
+
+        // Delete template
+        async function deleteTemplate(templateId) {
+            if (!confirm('Are you sure you want to delete this template?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/scheduler/offers/templates/${templateId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Template deleted successfully!');
+                    loadTemplates();
+                } else {
+                    alert('Failed to delete template: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting template:', error);
+                alert('An error occurred while deleting the template');
+            }
+        }
+
+        // Update statistics
+        async function updateStatistics() {
+            try {
+                const response = await fetch('/api/scheduler/dashboard/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalOffers').textContent = data.stats.total_offers || 0;
+                    document.getElementById('acceptedOffers').textContent = data.stats.accepted_offers || 0;
+                    document.getElementById('pendingOffers').textContent = data.stats.pending_offers || 0;
+                    document.getElementById('rejectedOffers').textContent = data.stats.rejected_offers || 0;
+                }
+            } catch (error) {
+                console.error('Error updating statistics:', error);
+            }
+        }
+
+        // Load analytics
+        function loadAnalytics() {
+            loadStatusChart();
+            loadTrendChart();
+            loadActivityTimeline();
+        }
+
+        // Load status chart
+        function loadStatusChart() {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            
+            const statusCounts = {
+                draft: offers.filter(o => o.status === 'draft').length,
+                sent: offers.filter(o => o.status === 'sent').length,
+                accepted: offers.filter(o => o.status === 'accepted').length,
+                rejected: offers.filter(o => o.status === 'rejected').length,
+                expired: offers.filter(o => o.status === 'expired').length
+            };
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Draft', 'Sent', 'Accepted', 'Rejected', 'Expired'],
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: [
+                            '#6c757d',
+                            '#007bff',
+                            '#28a745',
+                            '#dc3545',
+                            '#ffc107'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load trend chart
+        function loadTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            // Mock trend data - in real implementation, this would come from API
+            const trendData = {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Acceptance Rate (%)',
+                    data: [65, 70, 68, 75, 72, 78],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'line',
+                data: trendData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load activity timeline
+        function loadActivityTimeline() {
+            const container = document.getElementById('activityTimeline');
+            
+            const sortedOffers = offers.sort((a, b) => {
+                return new Date(b.created_at) - new Date(a.created_at);
+            }).slice(0, 10);
+
+            if (sortedOffers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No recent activity</h5>
+                    </div>
+                `;
+                return;
+            }
+
+            const timelineHtml = sortedOffers.map(offer => {
+                const statusColor = getStatusColor(offer.status);
+                const statusIcon = getStatusIcon(offer.status);
+                
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="background-color: ${statusColor}">
+                            <i class="fas ${statusIcon}"></i>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">Offer ${offer.status}</h6>
+                                        <p class="text-muted mb-2">${offer.candidate_name} - ${offer.job_title}</p>
+                                        <small class="text-muted">${formatDate(offer.created_at)}</small>
+                                    </div>
+                                    <span class="badge ${getStatusClass(offer.status)}">${offer.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = timelineHtml;
+        }
+
+        // Refresh offers
+        function refreshOffers() {
+            loadOffers();
+            updateStatistics();
+        }
+
+        // Filter offers
+        function filterOffers() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredOffers = offers;
+            
+            if (statusFilter) {
+                filteredOffers = filteredOffers.filter(o => o.status === statusFilter);
+            }
+            
+            // Temporarily replace offers array and re-render
+            const tempOffers = offers;
+            offers = filteredOffers;
+            renderOffers();
+            offers = tempOffers;
+        }
+
+        // Helper functions
+        function getStatusClass(status) {
+            const classes = {
+                'draft': 'bg-secondary',
+                'sent': 'bg-primary',
+                'accepted': 'bg-success',
+                'rejected': 'bg-danger',
+                'expired': 'bg-warning'
+            };
+            return classes[status] || 'bg-secondary';
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'draft': '#6c757d',
+                'sent': '#007bff',
+                'accepted': '#28a745',
+                'rejected': '#dc3545',
+                'expired': '#ffc107'
+            };
+            return colors[status] || '#6c757d';
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'draft': 'fa-file',
+                'sent': 'fa-paper-plane',
+                'accepted': 'fa-check',
+                'rejected': 'fa-times',
+                'expired': 'fa-clock'
+            };
+            return icons[status] || 'fa-circle';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+    </script>
+</body>
+</html>

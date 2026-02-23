@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard - Job Sphere</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .dashboard-card { transition: transform 0.2s; }
+        .dashboard-card:hover { transform: translateY(-5px); }
+
+        /* Added Style: Forces the specific text elements to be white */
+        .profile-dropdown .nav-link,
+        .profile-circle {
+            color: white !important;
+        }
+    </style>
+    
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}"><strong>Job Sphere</strong></a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.jobs_page') }}">Browse Jobs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('hr.dashboard_hr') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('hr.dashboard_scheduler') }}">Scheduler</a></li>
+                </ul>
+
+                <ul class="navbar-nav">
+{% if session.email %}
+    <li class="nav-item">
+        <a class="nav-link">{{ session.user_initial }}</a>
+    </li>
+    <li class="nav-item dropdown profile-dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <!-- profile circle with initial -->
+                                <span class="profile-circle me-2" title="{{ user_email }}">
+                                    {{ user_email[0] | upper }}
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileMenu">
+                                <li><a class="dropdown-item" href="{{ url_for('hr.dashboard_hr') }}">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('hr.dashboard_scheduler') }}">Scheduler</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                            </ul>
+                        </li>
+{% else %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('auth.login_page') }}">Login</a>
+    </li>
+{% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+    <div class="container-fluid my-4">
+        <div class="row">
+
+            <!-- SIDEBAR -->
+            <div class="col-md-3 col-lg-2 bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link active" href="#overview">Overview</a></li>
+                        <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('hr.hr_add_job') }}">Post New Job</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('hr.hr_jobs_manage') }}">Manage Jobs</a>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="#candidates">Candidates</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#tests">Tests</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#interviews">Interviews</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#workflow">Workflow</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#reports">Reports</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT -->
+            <div class="col-md-9 col-lg-10">
+
+                <h1 class="mb-4">HR Dashboard</h1>
+
+                <!-- Enhanced Stats Section -->
+<div class="row mb-4" id="overview">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-briefcase text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Active Jobs</h6>
+                        <h2 class="text-primary mb-0">{{ data.total_openings }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-people text-info fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Total Applicants</h6>
+                        <h2 class="text-info mb-0">{{ data.total_applications }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-calendar-check text-warning fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Interviews</h6>
+                        <h2 class="text-warning mb-0">{{ data.interviews }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-award text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Hired</h6>
+                        <h2 class="text-success mb-0">{{ data.hired_candidates }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- Recent Applications -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-1">Recent Applications</h5>
+                <p class="text-muted small mb-0">Latest applications requiring your attention</p>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Position</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Resume</th>
+                                <th>Interview</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                               <tbody>
+                                 {% for app in applications %}
+                                            <tr>
+                                                <td>{{ app.applicant_name }}</td>
+                                                <td>{{ job.title }}</td>
+                                                <td>{{ job.department }}</td>
+
+                                                <td>
+                                                    <span class="badge 
+                                                        {% if app.status == 'Hiring' %} bg-success
+                                                        {% elif app.status == 'Interview Scheduled' %} bg-warning
+                                                        {% elif app.status == 'Under Review' %} bg-info
+                                                        {% elif app.status == 'Rejected' %} bg-danger
+                                                        {% else %} bg-secondary {% endif %}
+                                                    ">
+                                                        {{ app.status }}
+                                                    </span>
+                                                </td>
+
+                                                <td>{{ app.date_applied.strftime('%d %b %Y') }}</td>
+
+                                                
+                                             <td>
+                                                {% if app.resume_file %}
+                                                    <a href="{{ url_for('view_resume', filename=app.resume_file) }}" 
+                                                    class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    Preview
+                                                    </a>
+
+                                                    <a href="{{ url_for('download_resume', filename=app.resume_file) }}" 
+                                                    class="btn btn-sm btn-outline-secondary">
+                                                    Download
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">No file</span>
+                                                {% endif %}
+                                            </td>
+                                         <td>
+                                            <form method="POST" action="{{ url_for('hr.update_status', app_id=app._id) }}">
+                                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                    <option value="Pending" {% if app.status=='Pending' %}selected{% endif %}>Pending</option>
+                                                    <option value="Under Review" {% if app.status=='Under Review' %}selected{% endif %}>Under Review</option>
+                                                    <option value="Interview Scheduled" {% if app.status=='Interview Scheduled' %}selected{% endif %}>Interview Scheduled</option>
+                                                    {% if app.status == 'Interview Scheduled' or app.status == 'Hired' %}
+                                                        <option value="Hired" {% if app.status=='Hired' %}selected{% endif %}>Hired</option>
+                                                    {% endif %}
+                                                    <option value="Rejected" {% if app.status=='Rejected' %}selected{% endif %}>Rejected</option>
+                                                </select>
+                                            </form>
+                                        </td>   
+                                        <td>
+                                            <a href="{{ url_for('hr.video_call', app_id=app._id) }}"
+                                            class="btn btn-sm btn-outline-primary
+                                            {% if app.status == 'Hired' %} disabled {% endif %}">
+                                            Video Call
+                                            </a>
+                                        </td>
+
+                                            </tr>
+                                            {% endfor %}
+
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <a href="#candidates" class="btn btn-sm btn-outline-primary">View All Applications</a>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Management Section -->
+                <div class="row mt-4" id="tests">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h5 class="card-title mb-1">Test Management</h5>
+                                <p class="text-muted small mb-0">Create and manage assessment tests</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTestModal">
+                                            <i class="bi bi-plus-circle me-2"></i>Create New Test
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <button class="btn btn-outline-secondary" onclick="loadTests()">
+                                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh Tests
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="testsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Test Title</th>
+                                                <th>Job</th>
+                                                <th>Status</th>
+                                                <th>Questions</th>
+                                                <th>Duration</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Tests will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Management Section -->
+                <div class="row mt-4" id="workflow">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h5 class="card-title mb-1">Candidate Pipeline</h5>
+                                <p class="text-muted small mb-0">Manage candidate workflow and stages</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <button class="btn btn-primary" onclick="loadPipelineOverview()">
+                                                    <i class="bi bi-diagram-3 me-2"></i>View Pipeline
+                                                </button>
+                                                <button class="btn btn-warning ms-2" onclick="loadPendingActions()">
+                                                    <i class="bi bi-exclamation-triangle me-2"></i>Pending Actions
+                                                </button>
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-info" id="pendingActionsCount">0 Pending Actions</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="pipelineOverview" class="mt-3">
+                                    <!-- Pipeline overview will be loaded here -->
+                                </div>
+                                
+                                <div id="pendingActions" class="mt-3">
+                                    <!-- Pending actions will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interview Management Section -->
+                <div class="row mt-4" id="interviews">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h5 class="card-title mb-1">Interview Management</h5>
+                                <p class="text-muted small mb-0">Schedule and manage candidate interviews</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleInterviewModal">
+                                            <i class="bi bi-calendar-plus me-2"></i>Schedule Interview
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <button class="btn btn-outline-secondary" onclick="loadInterviews()">
+                                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="interviewsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Candidate</th>
+                                                <th>Position</th>
+                                                <th>Type</th>
+                                                <th>Date & Time</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Interviews will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Test Modal -->
+    <div class="modal fade" id="createTestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Test</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createTestForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Job Position</label>
+                                <select class="form-select" id="testJobId" required>
+                                    <option value="">Select Job</option>
+                                    <!-- Jobs will be populated here -->
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Test Title</label>
+                                <input type="text" class="form-control" id="testTitle" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="testDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" id="testDuration" value="60" min="30" max="180">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Passing Score (%)</label>
+                                <input type="number" class="form-control" id="testPassingScore" value="70" min="50" max="100">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Number of Questions</label>
+                                <input type="number" class="form-control" id="testNumQuestions" value="10" min="5" max="50">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createTest()">Create Test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Details Modal -->
+    <div class="modal fade" id="testDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Test Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="testDetailsContent">
+                        <!-- Test details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Interview Modal -->
+    <div class="modal fade" id="scheduleInterviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleInterviewForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Application</label>
+                                <select class="form-select" id="interviewApplicationId" required>
+                                    <option value="">Select Application</option>
+                                    <!-- Applications will be populated here -->
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Interview Type</label>
+                                <select class="form-select" id="interviewType" required>
+                                    <option value="Technical">Technical</option>
+                                    <option value="Behavioral">Behavioral</option>
+                                    <option value="HR">HR</option>
+                                    <option value="Final">Final</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" id="interviewDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Time</label>
+                                <input type="time" class="form-control" id="interviewTime" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" id="interviewDuration" value="60" min="30" max="180">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" id="interviewLocation" placeholder="Video call link or physical address">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="interviewNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="scheduleInterview()">Schedule Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interview Details Modal -->
+    <div class="modal fade" id="interviewDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Interview Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="interviewDetailsContent">
+                        <!-- Interview details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="joinInterviewCall()">Join Call</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2024 Job Sphere. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+
+    <script>
+        // Test Management Functions
+        async function loadTests() {
+            try {
+                const response = await fetch('/api/scheduler/tests');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const testsTable = document.getElementById('testsTable').getElementsByTagName('tbody')[0];
+                    testsTable.innerHTML = '';
+                    
+                    data.tests.forEach(test => {
+                        const row = testsTable.insertRow();
+                        row.innerHTML = `
+                            <td>${test.title}</td>
+                            <td>${test.job_title || 'N/A'}</td>
+                            <td><span class="badge bg-${test.status === 'Active' ? 'success' : 'warning'}">${test.status}</span></td>
+                            <td>${test.questions ? test.questions.length : 0}</td>
+                            <td>${test.duration_minutes} min</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewTestDetails('${test._id}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                ${test.status === 'Draft' ? `
+                                    <button class="btn btn-sm btn-outline-success" onclick="generateQuestions('${test._id}')">
+                                        <i class="bi bi-magic"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-outline-info" onclick="viewTestResults('${test._id}')">
+                                    <i class="bi bi-bar-chart"></i>
+                                </button>
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading tests:', error);
+            }
+        }
+
+        async function createTest() {
+            try {
+                const formData = {
+                    job_id: document.getElementById('testJobId').value,
+                    title: document.getElementById('testTitle').value,
+                    description: document.getElementById('testDescription').value,
+                    duration_minutes: parseInt(document.getElementById('testDuration').value),
+                    passing_score: parseInt(document.getElementById('testPassingScore').value)
+                };
+
+                const response = await fetch('/api/scheduler/tests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Test created successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('createTestModal')).hide();
+                    loadTests();
+                    
+                    // Generate questions automatically
+                    const numQuestions = parseInt(document.getElementById('testNumQuestions').value);
+                    await generateQuestions(data.test_id, numQuestions);
+                } else {
+                    alert('Error creating test: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error creating test:', error);
+                alert('Error creating test');
+            }
+        }
+
+        async function generateQuestions(testId, numQuestions = 10) {
+            try {
+                const response = await fetch(`/api/scheduler/tests/${testId}/generate-questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ num_questions: numQuestions })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Questions generated successfully!');
+                    loadTests();
+                } else {
+                    alert('Error generating questions: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error generating questions:', error);
+                alert('Error generating questions');
+            }
+        }
+
+        async function viewTestDetails(testId) {
+            try {
+                const response = await fetch(`/api/scheduler/tests/${testId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const test = data.test;
+                    const content = document.getElementById('testDetailsContent');
+                    
+                    let questionsHtml = '';
+                    if (test.questions && test.questions.length > 0) {
+                        questionsHtml = `
+                            <h6>Questions (${test.questions.length})</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Question</th>
+                                            <th>Type</th>
+                                            <th>Difficulty</th>
+                                            <th>Points</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${test.questions.map(q => `
+                                            <tr>
+                                                <td>${q.question_text.substring(0, 100)}...</td>
+                                                <td>${q.question_type}</td>
+                                                <td><span class="badge bg-info">${q.difficulty}</span></td>
+                                                <td>${q.points}</td>
+                                                <td>${q.category}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                    
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Test Information</h6>
+                                <p><strong>Title:</strong> ${test.title}</p>
+                                <p><strong>Description:</strong> ${test.description}</p>
+                                <p><strong>Duration:</strong> ${test.duration_minutes} minutes</p>
+                                <p><strong>Passing Score:</strong> ${test.passing_score}%</p>
+                                <p><strong>Status:</strong> <span class="badge bg-${test.status === 'Active' ? 'success' : 'warning'}">${test.status}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Statistics</h6>
+                                <p><strong>Total Submissions:</strong> ${test.total_submissions || 0}</p>
+                                <p><strong>Average Score:</strong> ${test.average_score || 0}%</p>
+                                <p><strong>Pass Rate:</strong> ${test.pass_rate || 0}%</p>
+                            </div>
+                        </div>
+                        ${questionsHtml}
+                    `;
+                    
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('testDetailsModal')).show();
+                }
+            } catch (error) {
+                console.error('Error viewing test details:', error);
+            }
+        }
+
+        async function viewTestResults(testId) {
+            try {
+                const response = await fetch(`/api/scheduler/tests/${testId}/statistics`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.statistics;
+                    alert(`Test Statistics:\nTotal Submissions: ${stats.total_submissions}\nAverage Score: ${stats.average_score.toFixed(1)}%\nPass Rate: ${stats.pass_rate.toFixed(1)}%\nHighest Score: ${stats.highest_score}%\nLowest Score: ${stats.lowest_score}%`);
+                }
+            } catch (error) {
+                console.error('Error viewing test results:', error);
+            }
+        }
+
+        // Workflow Management Functions
+        async function loadPipelineOverview() {
+            try {
+                const response = await fetch('/api/scheduler/workflow/pipeline-overview');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const overview = data.overview;
+                    const pipelineDiv = document.getElementById('pipelineOverview');
+                    
+                    let stagesHtml = '';
+                    for (const [stage, count] of Object.entries(overview.by_stage || {})) {
+                        const percentage = overview.conversion_rates[stage] || 0;
+                        stagesHtml += `
+                            <div class="col-md-3 mb-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <h4 class="text-primary">${count}</h4>
+                                        <p class="mb-0">${stage}</p>
+                                        <small class="text-muted">${percentage.toFixed(1)}%</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    pipelineDiv.innerHTML = `
+                        <h6>Candidate Pipeline Overview</h6>
+                        <div class="row">
+                            ${stagesHtml}
+                        </div>
+                        <div class="mt-3">
+                            <strong>Total Candidates:</strong> ${overview.total_candidates}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading pipeline overview:', error);
+            }
+        }
+
+        async function loadPendingActions() {
+            try {
+                const response = await fetch('/api/scheduler/workflow/pending-actions');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const actions = data.actions;
+                    const pendingDiv = document.getElementById('pendingActions');
+                    const countBadge = document.getElementById('pendingActionsCount');
+                    
+                    countBadge.textContent = `${actions.length} Pending Actions`;
+                    
+                    if (actions.length > 0) {
+                        let actionsHtml = `
+                            <h6>Pending Actions</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Event</th>
+                                            <th>Type</th>
+                                            <th>Candidate</th>
+                                            <th>Scheduled Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        actions.forEach(action => {
+                            const date = new Date(action.scheduled_datetime).toLocaleDateString();
+                            const candidateName = action.application ? action.application.applicant_name : 'N/A';
+                            
+                            actionsHtml += `
+                                <tr>
+                                    <td>${action.title}</td>
+                                    <td><span class="badge bg-info">${action.event_type}</span></td>
+                                    <td>${candidateName}</td>
+                                    <td>${date}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="handleAction('${action._id}')">
+                                            Handle
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        actionsHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        
+                        pendingDiv.innerHTML = actionsHtml;
+                    } else {
+                        pendingDiv.innerHTML = '<p class="text-muted">No pending actions at this time.</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading pending actions:', error);
+            }
+        }
+
+        async function handleAction(actionId) {
+            // This would open a modal or form to handle the specific action
+            alert('Action handling would be implemented here for action: ' + actionId);
+        }
+
+        // Load jobs for test creation
+        async function loadJobsForTest() {
+            try {
+                const response = await fetch('/api/hr/jobs');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('testJobId');
+                    select.innerHTML = '<option value="">Select Job</option>';
+                    
+                    data.jobs.forEach(job => {
+                        const option = document.createElement('option');
+                        option.value = job._id;
+                        option.textContent = `${job.title} - ${job.department}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+
+        // Interview Management Functions
+        async function loadInterviews() {
+            try {
+                const response = await fetch('/api/scheduler/interviews/upcoming');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const interviewsTable = document.getElementById('interviewsTable').getElementsByTagName('tbody')[0];
+                    interviewsTable.innerHTML = '';
+                    
+                    data.interviews.forEach(interview => {
+                        const row = interviewsTable.insertRow();
+                        const date = new Date(interview.scheduled_datetime).toLocaleDateString();
+                        const time = new Date(interview.scheduled_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        row.innerHTML = `
+                            <td>${interview.candidate_name || 'N/A'}</td>
+                            <td>${interview.job_title || 'N/A'}</td>
+                            <td><span class="badge bg-info">${interview.interview_type}</span></td>
+                            <td>${date} ${time}</td>
+                            <td><span class="badge bg-${interview.status === 'Scheduled' ? 'primary' : interview.status === 'Completed' ? 'success' : 'warning'}">${interview.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewInterviewDetails('${interview._id}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                ${interview.status === 'Scheduled' ? `
+                                    <button class="btn btn-sm btn-outline-success" onclick="joinInterviewCall('${interview._id}')">
+                                        <i class="bi bi-camera-video"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-outline-info" onclick="submitFeedback('${interview._id}')">
+                                    <i class="bi bi-chat-square-text"></i>
+                                </button>
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading interviews:', error);
+            }
+        }
+
+        async function scheduleInterview() {
+            try {
+                const date = document.getElementById('interviewDate').value;
+                const time = document.getElementById('interviewTime').value;
+                const scheduledDateTime = new Date(`${date}T${time}`);
+                
+                const formData = {
+                    application_id: document.getElementById('interviewApplicationId').value,
+                    job_id: document.getElementById('interviewApplicationId').selectedOptions[0].getAttribute('data-job-id'),
+                    candidate_id: document.getElementById('interviewApplicationId').selectedOptions[0].getAttribute('data-candidate-id'),
+                    interview_type: document.getElementById('interviewType').value,
+                    scheduled_datetime: scheduledDateTime.toISOString(),
+                    duration_minutes: parseInt(document.getElementById('interviewDuration').value),
+                    location: document.getElementById('interviewLocation').value
+                };
+
+                const response = await fetch('/api/scheduler/interviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Interview scheduled successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('scheduleInterviewModal')).hide();
+                    loadInterviews();
+                } else {
+                    alert('Error scheduling interview: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error scheduling interview:', error);
+                alert('Error scheduling interview');
+            }
+        }
+
+        async function viewInterviewDetails(interviewId) {
+            try {
+                const response = await fetch(`/api/scheduler/interviews/${interviewId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const interview = data.interview;
+                    const content = document.getElementById('interviewDetailsContent');
+                    
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Interview Information</h6>
+                                <p><strong>Candidate:</strong> ${interview.candidate_name || 'N/A'}</p>
+                                <p><strong>Position:</strong> ${interview.job_title || 'N/A'}</p>
+                                <p><strong>Type:</strong> ${interview.interview_type}</p>
+                                <p><strong>Status:</strong> <span class="badge bg-primary">${interview.status}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Schedule</h6>
+                                <p><strong>Date:</strong> ${new Date(interview.scheduled_datetime).toLocaleDateString()}</p>
+                                <p><strong>Time:</strong> ${new Date(interview.scheduled_datetime).toLocaleTimeString()}</p>
+                                <p><strong>Duration:</strong> ${interview.duration_minutes} minutes</p>
+                                <p><strong>Location:</strong> ${interview.location || 'N/A'}</p>
+                            </div>
+                        </div>
+                        ${interview.notes ? `<div class="mt-3"><p><strong>Notes:</strong> ${interview.notes}</p></div>` : ''}
+                    `;
+                    
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('interviewDetailsModal')).show();
+                }
+            } catch (error) {
+                console.error('Error viewing interview details:', error);
+            }
+        }
+
+        async function joinInterviewCall(interviewId) {
+            if (interviewId) {
+                window.open(`/hr/video-call/${interviewId}`, '_blank');
+            } else {
+                alert('Please select an interview to join');
+            }
+        }
+
+        async function submitFeedback(interviewId) {
+            // This would open a feedback form modal
+            alert('Feedback form would be implemented here for interview: ' + interviewId);
+        }
+
+        // Load applications for interview scheduling
+        async function loadApplicationsForInterview() {
+            try {
+                const response = await fetch('/api/hr/applications');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('interviewApplicationId');
+                    select.innerHTML = '<option value="">Select Application</option>';
+                    
+                    data.applications.forEach(app => {
+                        if (app.status === 'Under Review' || app.status === 'Test Passed') {
+                            const option = document.createElement('option');
+                            option.value = app._id;
+                            option.textContent = `${app.applicant_name} - ${app.job_title}`;
+                            option.setAttribute('data-job-id', app.job_id);
+                            option.setAttribute('data-candidate-id', app.user_id);
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading applications:', error);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTests();
+            loadPipelineOverview();
+            loadPendingActions();
+            loadJobsForTest();
+            loadInterviews();
+            loadApplicationsForInterview();
+        });
+    </script>
+
+</body>
+</html>

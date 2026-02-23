@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ job.title }} - Job Sphere</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<!-- Place the first <script> tag in your HTML's <head> -->
+<script src="https://cdn.tiny.cloud/1/b5tuw0dgni6co0sn9yckr4hgo9z71qhhiiyhwys9dp1mr6gl/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+
+<script>
+            tinymce.init({
+                selector: 'textarea',
+                plugins: [
+                // Core editing features
+                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+                // Your account includes a free trial of TinyMCE premium features
+                // Try the most popular premium features until Jan 9, 2026:
+                'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'advtemplate', 'ai', 'uploadcare', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
+                ],
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+                tinycomments_mode: 'embedded',
+                tinycomments_author: 'Author name',
+                mergetags_list: [
+                { value: 'First.Name', title: 'First Name' },
+                { value: 'Email', title: 'Email' },
+                ],
+                ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
+                uploadcare_public_key: 'cdab414cd541c4413acc',
+            });
+            </script>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}"><strong>Job Sphere</strong></a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.jobs_page') }}">Browse Jobs</a></li>
+            </ul>
+
+            <ul class="navbar-nav">
+
+                {% if session.email and not session.is_hr %}
+                <!-- USER LOGGED IN -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="profile-circle">{{ session.email[0]|upper }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('user.dashboard_user') }}">Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </li>
+
+                {% elif session.email and session.is_hr %}
+                <!-- HR LOGGED IN -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="profile-circle">{{ session.email[0]|upper }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('hr.dashboard_hr') }}">HR Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </li>
+
+                {% else %}
+                <!-- NOT LOGGED IN -->
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login_page') }}">Login</a></li>
+                {% endif %}
+
+            </ul>
+
+        </div>
+    </div>
+</nav>
+
+<div class="container my-5">
+
+    <h2 class="fw-bold">{{ job.title }}</h2>
+    <p class="text-muted">{{ job.department }} • {{ job.location }}</p>
+
+    <div class="mb-4">
+        <h5>Description</h5>
+        <p>{{ job.description | safe }}</p>
+    </div>
+
+    <div class="mb-4">
+        <h5>Required Skills</h5>
+        <p>{{ job.skills }}</p>
+    </div>
+
+ <h4 class="mt-4 mb-3">Apply for this Job</h4>
+
+ {% if session.email and not session.is_hr %}
+    <!-- Show form for logged-in regular users -->
+    <form action="{{ url_for('apply_job') }}" method="POST" enctype="multipart/form-data" id="applyForm">     
+        <input type="hidden" name="job_id" value="{{ job._id }}">
+        <script>console.log("Job id: {{ job._id }}");</script>
+
+        <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="name" class="form-control" required value="{{ session.username }}">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required value="{{ session.email }}" readonly>
+                    </div>
+                </div>
+
+        <div class="mb-3">
+            <label class="form-label">Phone Number</label>
+            <input type="text" name="phone" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Upload Resume (PDF only)</label>
+          <input type="file" name="resume" class="form-control" accept="application/pdf" required>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Cover Letter</label>
+            <textarea name="cover_letter" class="form-control" rows="4"></textarea>
+        </div>
+
+                <button class="btn btn-primary w-100">Submit Application</button>
+    </form>
+ {% elif session.is_hr %}
+    <div class="alert alert-info">
+        You are logged in as HR. Please use a regular user account to apply for jobs.
+    </div>
+ {% else %}
+    <div class="alert alert-warning">
+        <p>You must be logged in to apply for this job.</p>
+        <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">Log In</a>
+        <a href="{{ url_for('auth.register_page') }}" class="btn btn-outline-secondary">Register</a>
+    </div>
+ {% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// redirect on success
+document.getElementById("applyForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    // 1. Manually sync TinyMCE content back to the textarea
+    if (typeof tinymce !== 'undefined') {
+        tinymce.triggerSave();
+    }
+
+    // Print the Jinja variable directly
+    console.log("Jinja variable job._id: {{ job._id }}");
+
+    let form = this;
+    let formData = new FormData(form);
+
+    // Debugging: verify job_id is now a valid hex string in your browser console
+    console.log("Submitting Job ID:", formData.get("job_id"));
+
+    fetch(form.action, {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.message && !data.error) {
+            alert("Application submitted successfully!");
+            window.location.href = "{{ url_for('main.jobs_page') }}";
+        } else {
+            alert("Error: " + (data.error || data.message));
+        }
+    })
+    .catch(err => {
+        console.error("Submission failed:", err);
+        alert("An unexpected error occurred.");
+    });
+});
+
+</script>
+</body>
+</html>
