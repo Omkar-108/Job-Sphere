@@ -1,0 +1,9 @@
+google-adk>=0.1.0
+google-generativeai>=0.3.0
+flask>=2.3.0
+python-dotenv>=1.0.0
+pyyaml>=6.0
+requests>=2.31.0
+pydantic
+# Add if deploying to Vertex AI
+google-cloud-aiplatform[adk,agent_engines]
